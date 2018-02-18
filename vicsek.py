@@ -13,6 +13,7 @@ from matplotlib.widgets import Button
 import sys
 
 #Define Variables
+
 v=0.03
 eta=0.1
 L=3.1
@@ -45,25 +46,6 @@ def update():
         theta[i]=theta_new[i]
         x[i]=(x[i]+v*np.cos(theta[i]))%L
         y[i]=(y[i]+v*np.sin(theta[i]))%L
-
-#Run Code
-
-#time_limit=100
-"""
-order_arr=[]
-eta_arr = np.linspace(0,1,20)
-for eta in eta_arr:
-    initialize()
-    while abs(order-order_new)>0.001:
-        order=order_new
-        update()
-        order_new=(np.sqrt(np.sum(np.cos(theta))**2+np.sum(np.sin(theta))**2))/N
-        order_inst.append(order_new)
-    order_arr.append(np.mean(order_inst))
-
-plt.scatter(eta_arr,order_arr)
-plt.show()
-"""
 
 
 #Plot
