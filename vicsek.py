@@ -15,7 +15,7 @@ import sys
 #Define Variables
 
 v=0.03
-eta=0.1
+eta=0.3
 L=3.1
 N=40
 
