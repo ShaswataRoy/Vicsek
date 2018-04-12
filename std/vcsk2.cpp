@@ -136,21 +136,21 @@ void compute_order(int no)
     int a,b;
     double eps=0.;
     int repeat =1;
-    const int no_points=20;
-    const double eta_max=8;
+    const int no_points=40;
+    const double eta_max=10;
     if(no<100)
     {
-        a=200;b=10;eps=0.01;repeat=200;
+        a=200;b=10;eps=0.01;repeat=10;
     }
 
     else if(no<1000 && no>=100)
     {
-        a=100;b=10;eps=0.001;repeat=40;
+        a=200;b=10;eps=0.01;repeat=1000;
     }
 
     else if(no>=1000)
     {
-        a=200;b=5;eps=0.01;repeat=20;
+        a=200;b=5;eps=0.01;repeat=50;
     }
 
 
@@ -167,17 +167,16 @@ void compute_order(int no)
 
     for(int r=0;r<repeat;r++)
     {
-        initialize();
-
         for(int i=0;i<no_points;i++)
         {
+            initialize();
             eta=eta_arr[i];
             for(t=0;t<MAX_TIME;t++)
             {
                 if(t>a)
                 {
-                    if(fabs(array_mean(ordall,t-2*b,t-b)-
-                            array_mean(ordall,t-b,t))<eps)
+                    if(fabs(array_std(ordall,t-2*b,t-b)-
+                            array_std(ordall,t-b,t))<eps)
                         break;
                 }
                 theta_cos = 0.;
@@ -193,7 +192,7 @@ void compute_order(int no)
                 ordall[t]=order_new;
             }
 
-            order_arr[i] += array_mean(ordall,t*3/4,t);
+            order_arr[i] += array_std(ordall,t*3/4,t);
         }
     }
     for(int i=0;i<no_points;i++)
@@ -208,7 +207,7 @@ int main()
 
     struct timeval start, end;
     gettimeofday(&start, NULL);
-    N=40;L=3.14;
+    N=40;L=3.16;
 
     // benchmark code
     string str = "vicsek";

@@ -5,6 +5,7 @@
 #include <random>
 #include <iostream>
 #include <omp.h>
+#include "progress.h"
 
 using namespace std;
 
@@ -15,6 +16,7 @@ double v=0.03;
 double eta=0.1;
 double L=31;
 int N=4000;
+double radius = 0.1;
 
 //double ordall[MAX_TIME];
 FILE *fp;
@@ -55,9 +57,20 @@ void initialize()
 
 //Functions
 
-double dist(int i,int j)
+double old_dist(int i,int j)
 {
     return(sqrt((x[i]-x[j])*(x[i]-x[j])+(y[i]-y[j])*(y[i]-y[j])));
+}
+
+double dist(int i,int j){
+    double dx, dy;
+    dx = fabs(x[i] - x[j]);
+    if (dx > L-dx)
+        dx = L-dx;
+    dy = fabs(y[i] - y[j]);
+    if (dy > L-dy)
+        dy = L-dy;
+    return sqrt(dx*dx + dy*dy);
 }
 
 void update()
@@ -84,12 +97,42 @@ void update()
         }
     }
 
+    /*bool near[N];
+    double x_old[N],y_old[N];
+
+    for(int i=0;i<N;i++)
+    {
+        x_old[i] = x[i];
+        y_old[i] = y[i];
+    }*/
+
     for(int i=0;i<N;i++)
     {
         theta[i]=theta_new[i];
         x[i]=fmod((x[i]+v*cos(theta[i])),L);
         y[i]=fmod((y[i]+v*sin(theta[i])),L);
     }
+
+    /*for(int i=0;i<N;i++)
+    {
+        near[i]=false;
+        for(int j=0;j<N;j++)
+        {
+            if(dist(i,j)<radius)
+            {
+                near[i]=true;
+            }
+        }
+    }
+
+    for(int i=0;i<N;i++)
+    {
+        if(near[i])
+        {
+            x[i]=x_old[i];
+            y[i]=y_old[i];
+        }
+    }*/
 }
 
 double array_mean(double *array,int min,int max)
@@ -137,22 +180,9 @@ void compute_order(int no)
     double eps=0.;
     int repeat =1;
     const int no_points=20;
-    const double eta_max=8;
-    if(no<100)
-    {
-        a=200;b=10;eps=0.01;repeat=200;
-    }
+    const double eta_max=2*M_PI;
 
-    else if(no<1000 && no>=100)
-    {
-        a=100;b=10;eps=0.001;repeat=40;
-    }
-
-    else if(no>=1000)
-    {
-        a=200;b=5;eps=0.01;repeat=20;
-    }
-
+    a=200;b=10;eps=0.01;repeat=2;
 
     double order_arr[no_points],eta_arr[no_points];
     double theta_cos,theta_sin;
@@ -167,6 +197,7 @@ void compute_order(int no)
 
     for(int r=0;r<repeat;r++)
     {
+        printProgress(1.0*r/repeat);
         initialize();
 
         for(int i=0;i<no_points;i++)
@@ -176,8 +207,8 @@ void compute_order(int no)
             {
                 if(t>a)
                 {
-                    if(fabs(array_mean(ordall,t-2*b,t-b)-
-                            array_mean(ordall,t-b,t))<eps)
+                    if(fabs(array_std(ordall,t-2*b,t-b)-
+                            array_std(ordall,t-b,t))<eps)
                         break;
                 }
                 theta_cos = 0.;
@@ -193,7 +224,7 @@ void compute_order(int no)
                 ordall[t]=order_new;
             }
 
-            order_arr[i] += array_mean(ordall,t*3/4,t);
+            order_arr[i] += array_std(ordall,t*3/4,t);
         }
     }
     for(int i=0;i<no_points;i++)
@@ -203,16 +234,17 @@ void compute_order(int no)
 
 }
 
-int main()
+int main(int argc,char* argv[])
 {
 
     struct timeval start, end;
     gettimeofday(&start, NULL);
-    N=40;L=3.14;
+    cout<<"\nN = "<<argv[1]<<"\n";
+    N=atoi(argv[1]);L=atof(argv[2]);
 
     // benchmark code
     string str = "vicsek";
-    str+=to_string(N)+"s.txt";
+    str+=to_string(N)+".txt";
 
     fp = fopen(str.c_str(),"w");
 
@@ -222,6 +254,6 @@ int main()
 
     double delta = ((end.tv_sec  - start.tv_sec) * 1000000u +
              end.tv_usec - start.tv_usec) / 1.e6;
-    cout<<"Elasped time is "<< delta<<" seconds.\n";
+    cout<<"\rElasped time is "<< delta<<" seconds.\n";
     return(0);
 }

@@ -130,77 +130,87 @@ double array_binder(double *array,int min,int max)
 
 //Plot
 
-void compute_order(int no)
+double compute(double eta)
 {
+    int no=N;
     initialize();
     int a,b;
     double eps=0.;
     int repeat =1;
-    const int no_points=20;
-    const double eta_max=8;
-    if(no<100)
-    {
-        a=200;b=10;eps=0.01;repeat=200;
-    }
 
-    else if(no<1000 && no>=100)
-    {
-        a=100;b=10;eps=0.001;repeat=40;
-    }
-
-    else if(no>=1000)
-    {
-        a=200;b=5;eps=0.01;repeat=20;
-    }
+    a=200;b=10;eps=0.01;repeat=1000;
 
 
-    double order_arr[no_points],eta_arr[no_points];
+    double order_arr;
     double theta_cos,theta_sin;
     double ordall[MAX_TIME];
     int t=0;
-    for(int i=0;i<no_points;i++)
-    {
-        eta_arr[i] = eta_max*i/(1.0*no_points);
-    }
 
-    fprintf(fp,"#eta\torder\n");
 
     for(int r=0;r<repeat;r++)
     {
         initialize();
 
-        for(int i=0;i<no_points;i++)
+        for(t=0;t<MAX_TIME;t++)
         {
-            eta=eta_arr[i];
-            for(t=0;t<MAX_TIME;t++)
+            if(t>a)
             {
-                if(t>a)
-                {
-                    if(fabs(array_mean(ordall,t-2*b,t-b)-
-                            array_mean(ordall,t-b,t))<eps)
-                        break;
-                }
-                theta_cos = 0.;
-                theta_sin = 0.;
-                update();
-
-                for(int j=0;j<no;j++)
-                {
-                    theta_cos+=cos(theta[j]);
-                    theta_sin+=sin(theta[j]);
-                }
-                order_new=sqrt(theta_cos*theta_cos+theta_sin*theta_sin)/no;
-                ordall[t]=order_new;
+                if(fabs(array_std(ordall,t-2*b,t-b)-
+                        array_std(ordall,t-b,t))<eps)
+                    break;
             }
+            theta_cos = 0.;
+            theta_sin = 0.;
+            update();
 
-            order_arr[i] += array_mean(ordall,t*3/4,t);
+            for(int j=0;j<no;j++)
+            {
+                theta_cos+=cos(theta[j]);
+                theta_sin+=sin(theta[j]);
+            }
+            order_new=sqrt(theta_cos*theta_cos+theta_sin*theta_sin)/no;
+            ordall[t]=order_new;
         }
-    }
-    for(int i=0;i<no_points;i++)
-    {
-        fprintf(fp,"%lf\t%lf\n",eta_arr[i],order_arr[i]/repeat);
+
+        order_arr += array_std(ordall,t*3/4,t);
     }
 
+    return(L*L*order_arr/repeat);
+
+}
+
+void golden(double (*func)(double x),double a,double c,double b,double fa,double fc,double fb,int i)
+{
+    double phi = (1+sqrt(5))/2;
+
+    if(i==1)
+    {
+        double d = (a+b*phi)/(1+phi);
+        double fd = (*func)(d);
+        if(fabs(c-d)<0.01)
+            return;
+
+        fprintf(fp,"%lf\t%lf\n",d,fd);
+        if(fd<fc)
+            golden(func,a,c,d,fa,fc,fd,2);
+        else
+            golden(func,c,d,b,fc,fd,fb,1);
+    }
+
+    else if(i==2)
+    {
+        double d = (b+a*phi)/(1+phi);
+        double fd = (*func)(d);
+        if(fabs(c-d)<0.01)
+            return;
+
+        fprintf(fp,"%lf\t%lf\n",d,fd);
+        if(fd>fc)
+            golden(func,a,d,c,fa,fd,fc,2);
+
+        else
+            golden(func,d,c,b,fd,fc,fb,1);
+    }
 }
 
 int main()
@@ -208,15 +218,18 @@ int main()
 
     struct timeval start, end;
     gettimeofday(&start, NULL);
-    N=40;L=3.14;
+    N=40;L=3.16;
 
     // benchmark code
     string str = "vicsek";
-    str+=to_string(N)+"s.txt";
+    str+=to_string(N)+"max.txt";
 
     fp = fopen(str.c_str(),"w");
+    double phi3 = (1+sqrt(5))/2;
+    double phi2=(3*phi3+4)/(1+phi3);
+    golden(compute,3,phi2,4,compute(3),compute(phi2),compute(4),1);
 
-    compute_order(N);
+    //compute_order(N);
     fclose(fp);
     gettimeofday(&end, NULL);
 

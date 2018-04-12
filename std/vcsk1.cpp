@@ -10,11 +10,10 @@ using namespace std;
 
 //Define Variables
 const int MAX_SIZE=10000;
-const int MAX_TIME=10000;
+const int MAX_TIME=500;
 double v=0.03;
 double eta=0.1;
-double L=31;
-int N=4000;
+double L,N;
 
 //double ordall[MAX_TIME];
 FILE *fp;
@@ -23,7 +22,7 @@ FILE *fp;
 //Initial State
 double x[MAX_SIZE],y[MAX_SIZE],
     theta[MAX_SIZE],theta_new[MAX_SIZE];
-double order,order_new;
+double order;
 
 //Initialize
 double uniform(double a,double b)
@@ -50,9 +49,7 @@ void initialize()
     initialize_array(theta_new,-M_PI,M_PI);
 
     order=0;
-    order_new=1;
 }
-
 //Functions
 
 double dist(int i,int j)
@@ -114,72 +111,34 @@ double array_std(double *array,int min,int max)
 }
 
 
-double array_binder(double *array,int min,int max)
-{
-    double second = 0.0;
-    double fourth = 0.0;
-    for(int i=min;i<max;i++)
-    {
-        second += pow(array[i],2);
-        fourth += pow(array[i],4);
-    }
-    fourth = fourth/(max-min);
-    second = second/(max-min);
-    return(1-fourth/(second*second*3));
-}
-
 //Plot
 
 void compute_order(int no)
 {
-    initialize();
-    int a,b;
-    double eps=0.;
-    int repeat =1;
+    int repeat =5;
     const int no_points=20;
-    const double eta_max=8;
-    if(no<100)
-    {
-        a=200;b=10;eps=0.01;repeat=200;
-    }
+    const double eta_max=2*M_PI;
 
-    else if(no<1000 && no>=100)
-    {
-        a=100;b=10;eps=0.001;repeat=40;
-    }
-
-    else if(no>=1000)
-    {
-        a=200;b=5;eps=0.01;repeat=20;
-    }
-
-
-    double order_arr[no_points],eta_arr[no_points];
     double theta_cos,theta_sin;
     double ordall[MAX_TIME];
-    int t=0;
-    for(int i=0;i<no_points;i++)
-    {
-        eta_arr[i] = eta_max*i/(1.0*no_points);
-    }
+    double ordall2[MAX_TIME];
 
     fprintf(fp,"#eta\torder\n");
 
-    for(int r=0;r<repeat;r++)
+    for(int i=0;i<no_points;i++)
     {
-        initialize();
-
-        for(int i=0;i<no_points;i++)
+        eta=eta_max*i/(1.0*no_points);
+        for(int k=0;k<MAX_TIME;k++)
         {
-            eta=eta_arr[i];
-            for(t=0;t<MAX_TIME;t++)
+            ordall[k]=0;
+            ordall2[k]=0;
+        }
+
+        for(int r=0;r<repeat;r++)
+        {
+            initialize();
+            for(int t=0;t<MAX_TIME;t++)
             {
-                if(t>a)
-                {
-                    if(fabs(array_mean(ordall,t-2*b,t-b)-
-                            array_mean(ordall,t-b,t))<eps)
-                        break;
-                }
                 theta_cos = 0.;
                 theta_sin = 0.;
                 update();
@@ -189,16 +148,16 @@ void compute_order(int no)
                     theta_cos+=cos(theta[j]);
                     theta_sin+=sin(theta[j]);
                 }
-                order_new=sqrt(theta_cos*theta_cos+theta_sin*theta_sin)/no;
-                ordall[t]=order_new;
-            }
 
-            order_arr[i] += array_mean(ordall,t*3/4,t);
+                order = sqrt(theta_cos*theta_cos+theta_sin*theta_sin)/no;
+                ordall[t]+=order;
+                ordall2[t]+=order*order;
+            }
         }
-    }
-    for(int i=0;i<no_points;i++)
-    {
-        fprintf(fp,"%lf\t%lf\n",eta_arr[i],order_arr[i]/repeat);
+        //double std = array_mean(ordall2,4*MAX_TIME/5,MAX_TIME)-pow(array_mean(ordall,4*MAX_TIME/5,MAX_TIME),2)/repeat;
+        //double std = ordall2[MAX_TIME-1]/repeat-pow(ordall[MAX_TIME-1]/repeat,2);
+        double std = ordall[MAX_TIME-1]/repeat;
+        fprintf(fp,"%lf\t%lf\n",eta,L*L*std);
     }
 
 }
@@ -211,7 +170,7 @@ int main()
     N=40;L=3.14;
 
     // benchmark code
-    string str = "vicsek";
+    string str = "test";
     str+=to_string(N)+"s.txt";
 
     fp = fopen(str.c_str(),"w");

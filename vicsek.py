@@ -14,10 +14,10 @@ import sys
 
 #Define Variables
 
-v=0.03
-eta=0.3
-L=3.1
-N=40
+v=0.3
+eta=0.2
+L=20
+N=150
 
 #Initial State
 

@@ -5,6 +5,7 @@
 #include <random>
 #include <iostream>
 #include <omp.h>
+#include "progress.h"
 
 using namespace std;
 
@@ -12,7 +13,8 @@ using namespace std;
 const int MAX_SIZE=10000;
 const int MAX_TIME=10000;
 double v=0.03;
-double eta=0.1;
+double eta=2.0;
+double rho;
 double L=31;
 int N=4000;
 
@@ -55,9 +57,20 @@ void initialize()
 
 //Functions
 
-double dist(int i,int j)
+double old_dist(int i,int j)
 {
     return(sqrt((x[i]-x[j])*(x[i]-x[j])+(y[i]-y[j])*(y[i]-y[j])));
+}
+
+double dist(int i,int j){
+    double dx, dy;
+    dx = fabs(x[i] - x[j]);
+    if (dx > L-dx)
+        dx = L-dx;
+    dy = fabs(y[i] - y[j]);
+    if (dy > L-dy)
+        dy = L-dy;
+    return sqrt(dx*dx + dy*dy);
 }
 
 void update()
@@ -102,76 +115,38 @@ double array_mean(double *array,int min,int max)
     return(sum/(max-min));
 }
 
-double array_std(double *array,int min,int max)
-{
-    double sum=0.0;
-    double mean=array_mean(array,min,max);
-    for(int i=min;i<max;i++)
-    {
-        sum+=(array[i]-mean)*(array[i]-mean);
-    }
-    return(sqrt(sum/(max-min)));
-}
-
-
-double array_binder(double *array,int min,int max)
-{
-    double second = 0.0;
-    double fourth = 0.0;
-    for(int i=min;i<max;i++)
-    {
-        second += pow(array[i],2);
-        fourth += pow(array[i],4);
-    }
-    fourth = fourth/(max-min);
-    second = second/(max-min);
-    return(1-fourth/(second*second*3));
-}
-
 //Plot
 
-void compute_order(int no)
+void compute_order()
 {
-    initialize();
+
     int a,b;
-    double eps=0.;
+    double eps=0.01;
     int repeat =1;
-    const int no_points=20;
-    const double eta_max=8;
-    if(no<100)
-    {
-        a=200;b=10;eps=0.01;repeat=200;
-    }
+    const int no_points=30;
+    const double rho_max=6.0;
 
-    else if(no<1000 && no>=100)
-    {
-        a=100;b=10;eps=0.001;repeat=40;
-    }
+    a=200;b=10;eps=0.01;repeat=200;
 
-    else if(no>=1000)
-    {
-        a=200;b=5;eps=0.01;repeat=20;
-    }
-
-
-    double order_arr[no_points],eta_arr[no_points];
+    double order;
     double theta_cos,theta_sin;
     double ordall[MAX_TIME];
     int t=0;
-    for(int i=0;i<no_points;i++)
+
+    fprintf(fp,"#rho\torder\n");
+
+    for(int i=1;i<no_points;i++)
     {
-        eta_arr[i] = eta_max*i/(1.0*no_points);
-    }
+        rho= rho_max*i/(1.0*no_points);
+        N = (int)(rho*L*L);
+        order=0;
 
-    fprintf(fp,"#eta\torder\n");
 
-    for(int r=0;r<repeat;r++)
-    {
-        initialize();
-
-        for(int i=0;i<no_points;i++)
+        for(int r=0;r<repeat;r++)
         {
-            eta=eta_arr[i];
+            printProgress((1.0-1.0*r/repeat)*(1.0*(i)/no_points)*(1.0*(i)/no_points)+(1.0*r/repeat)*(1.0*(i+1)/no_points)*(1.0*(i+1)/no_points) );
+
+            initialize();
             for(t=0;t<MAX_TIME;t++)
             {
                 if(t>a)
@@ -184,44 +159,40 @@ void compute_order(int no)
                 theta_sin = 0.;
                 update();
 
-                for(int j=0;j<no;j++)
+                for(int j=0;j<N;j++)
                 {
                     theta_cos+=cos(theta[j]);
                     theta_sin+=sin(theta[j]);
                 }
-                order_new=sqrt(theta_cos*theta_cos+theta_sin*theta_sin)/no;
-                ordall[t]=order_new;
+
+                ordall[t]=sqrt(theta_cos*theta_cos+theta_sin*theta_sin)/N;
             }
 
-            order_arr[i] += array_mean(ordall,t*3/4,t);
+            order += array_mean(ordall,t*3/4,t);
         }
-    }
-    for(int i=0;i<no_points;i++)
-    {
-        fprintf(fp,"%lf\t%lf\n",eta_arr[i],order_arr[i]/repeat);
-    }
 
+        fprintf(fp,"%lf\t%lf\n",rho,order/repeat);
+    }
 }
 
-int main()
+int main(int argc,char* argv[])
 {
 
     struct timeval start, end;
     gettimeofday(&start, NULL);
-    N=40;L=3.14;
+    L=20;
 
     // benchmark code
-    string str = "vicsek";
-    str+=to_string(N)+"s.txt";
+    string str = "density4.txt";
 
     fp = fopen(str.c_str(),"w");
 
-    compute_order(N);
+    compute_order();
     fclose(fp);
     gettimeofday(&end, NULL);
 
     double delta = ((end.tv_sec  - start.tv_sec) * 1000000u +
              end.tv_usec - start.tv_usec) / 1.e6;
-    cout<<"Elasped time is "<< delta<<" seconds.\n";
+    cout<<"\nElasped time is "<< delta<<" seconds.\n";
     return(0);
 }

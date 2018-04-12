@@ -5,6 +5,7 @@
 #include <random>
 #include <iostream>
 #include <omp.h>
+#include "progress.h"
 
 using namespace std;
 
@@ -101,33 +102,6 @@ double array_mean(double *array,int min,int max)
     }
     return(sum/(max-min));
 }
-
-double array_std(double *array,int min,int max)
-{
-    double sum=0.0;
-    double mean=array_mean(array,min,max);
-    for(int i=min;i<max;i++)
-    {
-        sum+=(array[i]-mean)*(array[i]-mean);
-    }
-    return(sqrt(sum/(max-min)));
-}
-
-
-double array_binder(double *array,int min,int max)
-{
-    double second = 0.0;
-    double fourth = 0.0;
-    for(int i=min;i<max;i++)
-    {
-        second += pow(array[i],2);
-        fourth += pow(array[i],4);
-    }
-    fourth = fourth/(max-min);
-    second = second/(max-min);
-    return(1-fourth/(second*second*3));
-}
-
 //Plot
 
 void compute_order(int no)
@@ -137,21 +111,7 @@ void compute_order(int no)
     double eps=0.;
     int repeat =1;
     const int no_points=20;
-    const double eta_max=8;
-    if(no<100)
-    {
-        a=200;b=10;eps=0.01;repeat=200;
-    }
-
-    else if(no<1000 && no>=100)
-    {
-        a=100;b=10;eps=0.001;repeat=40;
-    }
-
-    else if(no>=1000)
-    {
-        a=200;b=5;eps=0.01;repeat=20;
-    }
+    const double eta_max=2*M_PI;
 
 
     double order_arr[no_points],eta_arr[no_points];
@@ -163,65 +123,53 @@ void compute_order(int no)
         eta_arr[i] = eta_max*i/(1.0*no_points);
     }
 
-    fprintf(fp,"#eta\torder\n");
+    initialize();
 
-    for(int r=0;r<repeat;r++)
-    {
-        initialize();
-
-        for(int i=0;i<no_points;i++)
-        {
-            eta=eta_arr[i];
-            for(t=0;t<MAX_TIME;t++)
-            {
-                if(t>a)
-                {
-                    if(fabs(array_mean(ordall,t-2*b,t-b)-
-                            array_mean(ordall,t-b,t))<eps)
-                        break;
-                }
-                theta_cos = 0.;
-                theta_sin = 0.;
-                update();
-
-                for(int j=0;j<no;j++)
-                {
-                    theta_cos+=cos(theta[j]);
-                    theta_sin+=sin(theta[j]);
-                }
-                order_new=sqrt(theta_cos*theta_cos+theta_sin*theta_sin)/no;
-                ordall[t]=order_new;
-            }
-
-            order_arr[i] += array_mean(ordall,t*3/4,t);
-        }
-    }
     for(int i=0;i<no_points;i++)
     {
-        fprintf(fp,"%lf\t%lf\n",eta_arr[i],order_arr[i]/repeat);
+        eta=eta_arr[i];
+        for(t=0;t<50;t++)
+        {
+
+            theta_cos = 0.;
+            theta_sin = 0.;
+            update();
+
+            for(int j=0;j<no;j++)
+            {
+                theta_cos+=cos(theta[j]);
+                theta_sin+=sin(theta[j]);
+            }
+            order_new=sqrt(theta_cos*theta_cos+theta_sin*theta_sin)/no;
+            ordall[t]=order_new;
+        }
+
+        order_arr[i] += array_mean(ordall,t*3/4,t);
     }
+
+
+
+
 
 }
 
-int main()
+int main(int argc,char* argv[])
 {
 
     struct timeval start, end;
     gettimeofday(&start, NULL);
-    N=40;L=3.14;
+    cout<<"\nN = "<<argv[1]<<"\n";
+    N=atoi(argv[1]);L=atof(argv[2]);
 
     // benchmark code
-    string str = "vicsek";
-    str+=to_string(N)+"s.txt";
 
-    fp = fopen(str.c_str(),"w");
 
     compute_order(N);
-    fclose(fp);
+
     gettimeofday(&end, NULL);
 
     double delta = ((end.tv_sec  - start.tv_sec) * 1000000u +
              end.tv_usec - start.tv_usec) / 1.e6;
-    cout<<"Elasped time is "<< delta<<" seconds.\n";
+    cout<<"\rElasped time is "<< delta<<" seconds.\n";
     return(0);
 }
