@@ -11,7 +11,7 @@ using namespace std;
 //Define Variables
 const int MAX_SIZE=10000;
 const int MAX_TIME=500;
-double v=0.03;
+double v=0.3;
 double eta=0.1;
 double L,N;
 

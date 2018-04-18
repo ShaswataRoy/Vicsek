@@ -15,6 +15,7 @@ double v=0.03;
 double eta=0.1;
 double L=31;
 int N=4000;
+double radius=0.25;
 
 //double ordall[MAX_TIME];
 FILE *fp;
@@ -84,11 +85,50 @@ void update()
         }
     }
 
+    bool near[N];
+    double x_old[N],y_old[N];
+
+    for(int i=0;i<N;i++)
+    {
+        x_old[i] = x[i];
+        y_old[i] = y[i];
+    }
+
     for(int i=0;i<N;i++)
     {
         theta[i]=theta_new[i];
         x[i]=fmod((x[i]+v*cos(theta[i])),L);
         y[i]=fmod((y[i]+v*sin(theta[i])),L);
+    }
+
+    for(int i=0;i<N;i++)
+    {
+        near[i]=false;
+        for(int j=0;j<N;j++)
+        {
+            if(j<i)
+            {
+                if(dist(i,j)<2*radius)
+                {
+                    near[i]=true;
+                }
+            }
+
+            if(j>i)
+            {
+                if(sqrt((x[i]-x[j])*(x[i]-x[j])+(y[i]-y[j])*(y[i]-y[j]))<2*radius)
+                    near[i]=true;
+            }
+        }
+    }
+
+    for(int i=0;i<N;i++)
+    {
+        if(near[i])
+        {
+            x[i]=x_old[i];
+            y[i]=y_old[i];
+        }
     }
 }
 
@@ -136,11 +176,10 @@ void compute_order(int no)
     int a,b;
     double eps=0.;
     int repeat =1;
-    const int no_points=20;
+    const int no_points=30;
     const double eta_max=2*M_PI;
 
-    a=200;b=10;eps=0.01;repeat=20;
-
+    a=200;b=10;eps=0.01;repeat=3000;
 
     double order_arr[no_points],eta_arr[no_points];
     double theta_cos,theta_sin;
@@ -155,9 +194,10 @@ void compute_order(int no)
 
     for(int r=0;r<repeat;r++)
     {
+        initialize();
+
         for(int i=0;i<no_points;i++)
         {
-            initialize();
             eta=eta_arr[i];
             for(t=0;t<MAX_TIME;t++)
             {
@@ -195,11 +235,11 @@ int main()
 
     struct timeval start, end;
     gettimeofday(&start, NULL);
-    N=400;L=10;
+    N=40;L=3.14;
 
     // benchmark code
     string str = "vicsek";
-    str+=to_string(N)+".txt";
+    str+=to_string(N)+"6s.txt";
 
     fp = fopen(str.c_str(),"w");
 
