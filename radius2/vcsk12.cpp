@@ -179,7 +179,7 @@ void compute_order(int no)
     const int no_points=30;
     const double eta_max=2*M_PI;
 
-    a=200;b=10;eps=0.01;repeat=1000;
+    a=200;b=10;eps=0.01;repeat=6000;
 
     double order_arr[no_points],eta_arr[no_points];
     double theta_cos,theta_sin;
@@ -187,7 +187,7 @@ void compute_order(int no)
     int t=0;
     for(int i=0;i<no_points;i++)
     {
-        eta_arr[i] = eta_max*i/(1.0*no_points);
+        eta_arr[i] =3+2*i/(1.0*no_points);
     }
 
     fprintf(fp,"#eta\torder\n");

@@ -5,6 +5,7 @@
 #include <random>
 #include <iostream>
 #include <omp.h>
+#include "progress.h"
 
 using namespace std;
 
@@ -138,20 +139,9 @@ void compute_order(int no)
     int repeat =1;
     const int no_points=40;
     const double eta_max=10;
-    if(no<100)
-    {
-        a=200;b=10;eps=0.01;repeat=10;
-    }
 
-    else if(no<1000 && no>=100)
-    {
-        a=200;b=10;eps=0.01;repeat=1000;
-    }
+    a=200;b=10;eps=0.01;repeat=2000;
 
-    else if(no>=1000)
-    {
-        a=200;b=5;eps=0.01;repeat=50;
-    }
 
 
     double order_arr[no_points],eta_arr[no_points];
@@ -167,6 +157,8 @@ void compute_order(int no)
 
     for(int r=0;r<repeat;r++)
     {
+        printProgress(1.0*r/repeat);
+
         for(int i=0;i<no_points;i++)
         {
             initialize();
