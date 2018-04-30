@@ -5,7 +5,6 @@
 #include <random>
 #include <iostream>
 #include <omp.h>
-#include "progress.h"
 
 using namespace std;
 
@@ -157,7 +156,6 @@ void compute_order(int no)
 
     for(int r=0;r<repeat;r++)
     {
-        printProgress(1.0*r/repeat);
         for(int i=0;i<no_points;i++)
         {
             initialize();
@@ -198,7 +196,7 @@ int main()
 
     struct timeval start, end;
     gettimeofday(&start, NULL);
-    N=40;L=3.16;
+    N=80;L=4.47;
 
     // benchmark code
     string str = "vicsek";

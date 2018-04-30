@@ -199,7 +199,7 @@ int main()
 
     struct timeval start, end;
     gettimeofday(&start, NULL);
-    N=60;L=3.86;
+    N=100;L=5;
 
     // benchmark code
     string str = "vicsek";
